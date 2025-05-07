@@ -91,8 +91,16 @@ Pod::Spec.new do |spec|
   #  Not including the public_header_files will make all headers public.
   #
 
-  spec.source_files  = "src/**/*.{h,m}", "src/**/*.{h,cc}"
-  spec.exclude_files = "Classes/Exclude"
+  #spec.source_files  = "src/**/*.{h,m}", "src/**/*.{h,cc}"
+  #spec.exclude_files = "Classes/Exclude"
+
+  spec.subspec 'util' do |util|
+    util.source_files = 'src/util/*.{h,cc}'
+  end
+
+  spec.subspec 'convert' do |convert|
+    convert.source_files = 'src/*.{h,cc}', 'src/*.{h,m}'
+  end
 
   # spec.public_header_files = "Classes/**/*.h"
 
