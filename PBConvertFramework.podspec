@@ -53,7 +53,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.authors  = { 'The Protocol Buffers contributors' => 'jkeyi@qq.com' }
-  spec.cocoapods_version = '>= 1.0'
+  spec.cocoapods_version = '>= 1.0.1'
   # Or just: spec.author    = "jiangweibin"
   # spec.authors            = { "jiangweibin" => "jiangweibin.my@bytedance.com" }
   # spec.social_media_url   = "https://twitter.com/jiangweibin"
@@ -95,13 +95,8 @@ Pod::Spec.new do |spec|
   #spec.source_files  = "src/**/*.{h,m}", "src/**/*.{h,cc}"
   #spec.exclude_files = "Classes/Exclude"
 
-  spec.subspec 'magic' do |magic|
-    magic.source_files = 'src/magic/*.{h,cc,m,mm}'
-  end
 
-  spec.subspec 'serializer' do |serializer|
-    serializer.source_files = 'src/serializer/*.{h,cc,m,mm}'
-  end
+  spec.source_files = 'src/magic/*.{h,cc,m,mm}', 'src/serializer/*.{h,cc,m,mm}'
 
 #  spec.public_header_files = 'src/pb_convert.h'
 
