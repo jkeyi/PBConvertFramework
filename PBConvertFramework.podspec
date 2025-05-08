@@ -16,8 +16,8 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "PBConvertFramework"
-  spec.version      = "0.0.1"
-  spec.summary      = "A short description of PBConvertFramework."
+  spec.version      = "1.0"
+  spec.summary      = "Protocol Buffers v3 runtime library for C++"
 
   # This description is used to generate tags and improve search results.
   #   * Think: What does it do? Why did you write it? What is the focus?
@@ -27,7 +27,7 @@ Pod::Spec.new do |spec|
   # spec.description  = <<-DESC
   #                  DESC
 
-  spec.homepage     = "http://jkeyi.com/PBConvertFramework"
+  spec.homepage     = "https://github.com/jkeyi/PBConvertFramework.git"
   # spec.screenshots  = "www.example.com/screenshots_1.gif", "www.example.com/screenshots_2.gif"
 
 
@@ -38,7 +38,7 @@ Pod::Spec.new do |spec|
   #  Popular ones are 'MIT', 'BSD' and 'Apache License, Version 2.0'.
   #
 
-  spec.license      = "MIT"
+  spec.license      = "BSD-3-Clause"
   # spec.license      = { :type => "MIT", :file => "FILE_LICENSE" }
 
 
@@ -52,7 +52,8 @@ Pod::Spec.new do |spec|
   #  profile URL.
   #
 
-  spec.author             = { "jiangweibin" => "jiangweibin.my@bytedance.com" }
+  spec.authors  = { 'The Protocol Buffers contributors' => 'jkeyi@qq.com' }
+  spec.cocoapods_version = '>= 1.0'
   # Or just: spec.author    = "jiangweibin"
   # spec.authors            = { "jiangweibin" => "jiangweibin.my@bytedance.com" }
   # spec.social_media_url   = "https://twitter.com/jiangweibin"
@@ -79,8 +80,8 @@ Pod::Spec.new do |spec|
   #  Specify the location from where the source should be retrieved.
   #  Supports git, hg, bzr, svn and HTTP.
   #
-
-  spec.source       = { :git => "http://jkeyi/PBConvertFramework.git", :tag => "#{spec.version}" }
+  spec.source = { :git => 'https://github.com/jkeyi/PBConvertFramework.git',
+                :tag => "v#{spec.version}" }
 
 
   # ――― Source Code ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
