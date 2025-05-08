@@ -102,11 +102,7 @@ Pod::Spec.new do |spec|
     serializer.source_files = 'src/serializer/*.{h,cc,m,mm}'
   end
 
-  spec.subspec 'convert' do |convert|
-    convert.source_files = 'src/*.{h,cc,m,mm}'
-  end
-
-  # spec.public_header_files = "Classes/**/*.h"
+#  spec.public_header_files = 'src/pb_convert.h'
 
 
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
