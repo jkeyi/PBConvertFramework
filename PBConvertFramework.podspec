@@ -53,7 +53,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.authors  = { 'The Protocol Buffers contributors' => 'jkeyi@qq.com' }
-  spec.cocoapods_version = '>= 1.0.1'
+  spec.cocoapods_version = '>= 1.0'
   # Or just: spec.author    = "jiangweibin"
   # spec.authors            = { "jiangweibin" => "jiangweibin.my@bytedance.com" }
   # spec.social_media_url   = "https://twitter.com/jiangweibin"
