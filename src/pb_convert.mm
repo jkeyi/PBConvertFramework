@@ -14,6 +14,7 @@
 
     //
     magic::from_pb(nullptr, {}, {});
+    magic::to_pb(nil, nullptr, {}, {});
   }
 }
 

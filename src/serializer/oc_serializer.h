@@ -2,8 +2,10 @@
 #define CONVERT_SRC_SERIALIZER_OC_SERIALIZER_H_
 
 #import <Foundation/Foundation.h>
-#include "magic/error_code.h"
+
 #include <span>
+
+#include "magic/error_code.h"
 
 namespace magic::detail {
 
@@ -24,7 +26,6 @@ ErrorCode from_oc(NSObject* value, std::string_view& cpp_v);
 ErrorCode from_oc(NSObject* value, std::span<const uint8_t>& cpp_v);
 ErrorCode from_oc(NSObject* value, std::vector<uint8_t>& cpp_v);
 
-
 // cpp platform data to ios data
 NSObject* to_oc(int8_t cpp_v);
 NSObject* to_oc(uint8_t cpp_v);
@@ -42,8 +43,6 @@ NSObject* to_oc(const std::string& cpp_v);
 NSObject* to_oc(std::span<const uint8_t> cpp_v);
 NSObject* to_oc(const std::vector<uint8_t>& cpp_v);
 
-}
+}  // namespace magic::detail
 
-
-
-#endif // CONVERT_SRC_SERIALIZER_OC_SERIALIZER_H_
+#endif  // CONVERT_SRC_SERIALIZER_OC_SERIALIZER_H_

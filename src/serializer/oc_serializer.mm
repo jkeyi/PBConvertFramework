@@ -15,7 +15,7 @@ namespace magic::detail {
     return [NSNumber numberWith##NSType:cpp_v]; \
   }
 
-template<typename T>
+template <typename T>
 T* to_nstype(NSObject* value) {
   return [value isKindOfClass:[T class]] ? (T*)value : nil;
 }
@@ -34,7 +34,7 @@ MACRO_FROM_OC_IMPL(bool, boolValue)
 
 ErrorCode from_oc(NSObject* value, std::string& cpp_v) {
   std::string_view view;
-  if(!from_oc(value, view)) {
+  if (!from_oc(value, view)) {
     cpp_v = view;
     return magic::CommonError::SUCCESS;
   } else {
@@ -43,7 +43,7 @@ ErrorCode from_oc(NSObject* value, std::string& cpp_v) {
 }
 
 ErrorCode from_oc(NSObject* value, std::string_view& cpp_v) {
-  if(auto* ns_v = to_nstype<NSString>(value)) {
+  if (auto* ns_v = to_nstype<NSString>(value)) {
     cpp_v = [ns_v UTF8String];
     return magic::CommonError::SUCCESS;
   } else {
@@ -52,8 +52,9 @@ ErrorCode from_oc(NSObject* value, std::string_view& cpp_v) {
 }
 
 ErrorCode from_oc(NSObject* value, std::span<const uint8_t>& cpp_v) {
-  if(auto* ns_v = to_nstype<NSData>(value)) {
-    cpp_v = std::span<const uint8_t>(static_cast<const uint8_t*>(ns_v.bytes), std::size_t(ns_v.length));
+  if (auto* ns_v = to_nstype<NSData>(value)) {
+    cpp_v = std::span<const uint8_t>(static_cast<const uint8_t*>(ns_v.bytes),
+                                     std::size_t(ns_v.length));
     return magic::CommonError::SUCCESS;
   } else {
     return magic::CommonError::ARG_TYPE_ERROR;
@@ -62,7 +63,7 @@ ErrorCode from_oc(NSObject* value, std::span<const uint8_t>& cpp_v) {
 
 ErrorCode from_oc(NSObject* value, std::vector<uint8_t>& cpp_v) {
   std::span<const uint8_t> data;
-  if(!from_oc(value, data)) {
+  if (!from_oc(value, data)) {
     cpp_v.assign(data.begin(), data.end());
     return magic::CommonError::SUCCESS;
   } else {
@@ -97,5 +98,4 @@ NSObject* to_oc(std::span<const uint8_t> cpp_v) {
 NSObject* to_oc(const std::vector<uint8_t>& cpp_v) {
   return [NSData dataWithBytes:cpp_v.data() length:cpp_v.size()];
 }
-}
-
+}  // namespace magic::detail

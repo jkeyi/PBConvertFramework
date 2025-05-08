@@ -12,7 +12,6 @@
 
 #include "magic/error_code.h"
 
-
 namespace magic::pb {
 enum class PBError;
 }
@@ -78,10 +77,25 @@ struct Context {
   WarnningFields* warnning_fields = nullptr;
 };
 
+const FieldDescriptor* find_field(const Descriptor* descriptor,
+                                  const Reflection* ref,
+                                  const std::string& name);
+
+bool IsMessageInitialized(Message* message);
+
+ErrorCode MakeErrorCode(ErrorCode error_code,
+                        const std::string& field_name,
+                        const std::string& message_type);
+
+void AddWarnningField(WarnningFields* warnning_fields,
+                      const Descriptor* descriptor,
+                      const FieldDescriptor* field);
+
+// BEGIN FROM_PB FORWARD DEFINE
 template <FieldDescriptor::CppType T, typename Object>
 std::pair<ErrorCode, Object> from_pb(const Context& pb_context);
 
-template<typename Object>
+template <typename Object>
 using FromPbFunction =
     std::function<std::pair<ErrorCode, Object>(const Context&)>;
 
@@ -91,6 +105,22 @@ using FromPbFunctionMap =
 
 template <typename Object>
 const FromPbFunctionMap<Object>& GetFromPbFunctionMap();
+// END FROM_PB FORWARD DEFINE
+
+// BEGIN TO_PB FORWARD DEFINE
+template <FieldDescriptor::CppType T, typename Object>
+ErrorCode to_pb(Object obj, Context& pb_context);
+
+template <typename Object>
+using ToPbFunction = std::function<ErrorCode(Object, Context&)>;
+
+template <typename Object>
+using ToPbFunctionMap =
+    std::unordered_map<FieldDescriptor::CppType, ToPbFunction<Object>>;
+
+template <typename Object>
+const ToPbFunctionMap<Object>& GetToPbFunctionMap();
+// END TO_PB FORWARD DEFINE
 
 template <typename Object, bool reader>
 struct DictWrapper {
@@ -104,11 +134,26 @@ struct ArrayWrapper {
   void Add(Object value);
 };
 
+template <typename Object>
+struct TypeCheck {
+  bool IsNullOrUndefined() const;
+  bool IsArray() const;
+  bool IsDict() const;
+};
 
+template <typename Object, typename T>
+struct Serializer {
+  T from_platform(Object);
+  Object to_platform(const T&);
+};
+
+template <typename Object>
+struct IngoreErrorWhenConvertToPbOptionalField : public std::false_type {};
 
 static const std::string& kKeyFieldName = *(new std::string("key"));
 static const std::string& kValueFieldName = *(new std::string("value"));
 
+// BEGIN FROM_PB IMPL
 template <typename Key, typename Value>
 std::tuple<ErrorCode, Key, Value> from_pb(Message* message,
                                           const PBOptions& options) {
@@ -127,8 +172,7 @@ std::tuple<ErrorCode, Key, Value> from_pb(Message* message,
   }
   Context context{
       .message = message, .reflection = ref, .field = key, .options = options};
-  if (auto key_result = it->second(context);
-      key_result.first) {
+  if (auto key_result = it->second(context); key_result.first) {
     return {std::move(key_result.first), std::move(key_result.second), {}};
   } else {
     static const auto& function_map = GetFromPbFunctionMap<Value>();
@@ -265,8 +309,174 @@ std::pair<ErrorCode, Object> from_default_pb(DescriptorPool* descriptor_pool,
 
   return from_pb<Object>(message.get(), options);
 }
+// END FROM_PB IMPL
+
+// BEGIN TO_PB IMPL
+template <typename Key, typename Value>
+ErrorCode to_pb(Key k,
+                Value v,
+                Message* message,
+                WarnningFields* warnning_fields) {
+  const auto* descriptor = message->GetDescriptor();
+  const auto* ref = message->GetReflection();
+  const auto* key = descriptor->FindFieldByName(kKeyFieldName);
+  const auto* value = descriptor->FindFieldByName(kValueFieldName);
+
+  const auto& func_map = GetToPbFunctionMap<Key>();
+  auto it = func_map.find(key->cpp_type());
+  if (it == func_map.end()) {
+    assert(false);
+    PB_LOG(ERROR) << "v8_to_pb_map_item key ConvertFunction not found: "
+                  << key->cpp_type();
+    return PBError::kNoConvertFunction;
+  }
+
+  Context context{.message = message,
+                  .reflection = ref,
+                  .field = key,
+                  .warnning_fields = warnning_fields};
+  if (auto error_code = it->second(k, context)) {
+    return error_code;
+  }
+
+  it = func_map.find(value->cpp_type());
+  if (it == func_map.end()) {
+    assert(false);
+    PB_LOG(ERROR) << "v8_to_pb_map_item value ConvertFunction not found: "
+                  << value->cpp_type();
+    return PBError::kNoConvertFunction;
+  }
+
+  context.field = value;
+  return it->second(v, context);
 }
 
+template <typename Object>
+ErrorCode to_pb(Object object,
+                Message* message,
+                WarnningFields* warnning_fields) {
+  const auto* descriptor = message->GetDescriptor();
+  const auto* ref = message->GetReflection();
+  auto values = DictWrapper<Object, true>(object).KeyAndValues();
+  if (values.empty()) {
+    return message->IsInitialized() ? CommonError::SUCCESS
+                                    : CommonError::MISSING_ARG;
+  }
 
+  const FieldDescriptor* field = nullptr;
+  for (auto& [k, v] : values) {
+    if (TypeCheck<Object>(k).IsNullOrUndefined() ||
+        TypeCheck<Object>(v).IsNullOrUndefined()) {
+      continue;
+    }
+    field = find_field(descriptor, ref,
+                       Serializer<Object, std::string>().from_platform(k));
+    if (!field) {
+      continue;
+    }
+    const auto& func_map = GetToPbFunctionMap<Object>();
+    auto it = func_map.find(field->cpp_type());
+    if (it == func_map.end()) {
+      assert(false);
+      PB_LOG(ERROR) << "v8_to_pb field ConvertFunction not found: "
+                    << field->cpp_type() << ", " << field->name() << ", "
+                    << descriptor->full_name();
+      return MakeErrorCode(PBError::kNoConvertFunction, field->name(),
+                           descriptor->full_name());
+    }
 
-#endif // CONVERT_SRC_SERIALIZER_PB_SERIALIZER_H_
+    Context context{.message = message,
+                    .reflection = ref,
+                    .field = field,
+                    .warnning_fields = warnning_fields};
+
+    if (field->is_repeated()) {
+      TypeCheck<Object> type_check(v);
+      if ((field->is_map() && (type_check.IsArray() || !type_check.IsDict())) ||
+          (!field->is_map() && !type_check.IsArray())) {
+        PB_LOG(ERROR) << "v8_to_pb MESSAGE error: "
+                      << "name: " << field->name();
+        return MakeErrorCode(CommonError::ARG_TYPE_ERROR, field->name(),
+                             descriptor->full_name());
+      }
+      if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+        if (field->is_map()) {
+          auto property_list = DictWrapper<Object, true>(v).KeyAndValues();
+          for (const auto& [property_key, property_value] : property_list) {
+            Message* item = ref->AddMessage(message, field);
+            if (auto error_code = to_pb<Object, Object>(
+                    property_key, property_value, item, warnning_fields)) {
+              return MakeErrorCode(error_code, field->name(),
+                                   descriptor->full_name());
+            }
+          }
+        } else {
+          auto item_list = ArrayWrapper<Object, true>(v).Values();
+          for (const auto& array_tiem : item_list) {
+            Message* item = ref->AddMessage(message, field);
+            if (auto error_code =
+                    to_pb<Object>(array_tiem, item, warnning_fields)) {
+              return MakeErrorCode(error_code, field->name(),
+                                   descriptor->full_name());
+            }
+          }
+        }
+      } else {
+        auto item_list = ArrayWrapper<Object, true>(v).Values();
+        for (size_t i = 0; i < item_list.size(); ++i) {
+          context.index = static_cast<int>(i);
+          if (auto error_code = it->second(item_list[i], context)) {
+            return MakeErrorCode(error_code, field->name(),
+                                 descriptor->full_name());
+          }
+        }
+      }
+    } else {
+      auto error_code = it->second(v, context);
+      if (error_code &&
+          (!IngoreErrorWhenConvertToPbOptionalField<Object>::value ||
+           !field->is_optional())) {
+        return MakeErrorCode(error_code, field->name(),
+                             descriptor->full_name());
+      } else if (error_code) {
+        AddWarnningField(warnning_fields, descriptor, field);
+      }
+    }
+  }
+  return message->IsInitialized()
+             ? CommonError::SUCCESS
+             : MakeErrorCode(CommonError::MISSING_ARG,
+                             message->InitializationErrorString(),
+                             descriptor->full_name());
+}
+
+template <typename Object, typename Buffer = std::vector<uint8_t>>
+std::pair<ErrorCode, Buffer> to_pb(Object object,
+                                   DescriptorPool* descriptor_pool,
+                                   std::string_view pb_type,
+                                   WarnningFields* warnning_fields = nullptr) {
+  const Descriptor* descriptor =
+      descriptor_pool->FindMessageTypeByName(std::string(pb_type));
+  if (!descriptor) {
+    PB_LOG(ERROR) << "FindMessageTypeByName error, type: " << pb_type;
+    return {PBError::KPBMessageNotFound, Buffer{}};
+  }
+
+  DynamicMessageFactory factory;
+  std::unique_ptr<Message> message(
+      factory.GetPrototype(descriptor)->New());  // new message
+
+  auto error_code = to_pb<Object>(object, message.get(), warnning_fields);
+  Buffer pb_buffer;
+  if (!error_code) {
+    pb_buffer.resize(message->ByteSizeLong());
+    auto* memory = reinterpret_cast<uint8_t*>(
+        const_cast<typename Buffer::value_type*>(pb_buffer.data()));
+    message->SerializeWithCachedSizesToArray(memory);
+  }
+  return {std::move(error_code), std::move(pb_buffer)};
+}
+// END TO_PB IMPL
+}  // namespace magic::pb
+
+#endif  // CONVERT_SRC_SERIALIZER_PB_SERIALIZER_H_
