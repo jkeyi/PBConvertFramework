@@ -94,12 +94,16 @@ Pod::Spec.new do |spec|
   #spec.source_files  = "src/**/*.{h,m}", "src/**/*.{h,cc}"
   #spec.exclude_files = "Classes/Exclude"
 
-  spec.subspec 'util' do |util|
-    util.source_files = 'src/util/*.{h,cc}'
+  spec.subspec 'magic' do |magic|
+    magic.source_files = 'src/magic/*.{h,cc,m,mm}'
+  end
+
+  spec.subspec 'serializer' do |serializer|
+    serializer.source_files = 'src/serializer/*.{h,cc,m,mm}'
   end
 
   spec.subspec 'convert' do |convert|
-    convert.source_files = 'src/*.{h,cc}', 'src/*.{h,m}'
+    convert.source_files = 'src/*.{h,cc,m,mm}'
   end
 
   # spec.public_header_files = "Classes/**/*.h"
@@ -140,9 +144,15 @@ Pod::Spec.new do |spec|
 
    spec.requires_arc = true
    spec.xcconfig = {
-     "HEADER_SEARCH_PATHS" => "$(SRCROOT)/Protobuf_C++/src",
-     "CLANG_CXX_LANGUAGE_STANDARD" => "c++17",
+     # "HEADER_SEARCH_PATHS" => "$(SRCROOT)/Protobuf_C++/src",
+     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
      "CLANG_CXX_LIBRARY" => "libc++"
    }
    spec.dependency 'Protobuf_C++', '~> 3.21.12'
+   spec.header_mappings_dir = 'src'
+   spec.pod_target_xcconfig = {
+       'USE_HEADERMAP' => 'NO',
+       'ALWAYS_SEARCH_USER_PATHS' => 'NO',
+       'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/src" "$(SRCROOT)/Protobuf_C++/src"',
+     }
 end
