@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "PBConvertFramework"
-  spec.version      = "0.1"
+  spec.version      = "1.0.0.1"
   spec.summary      = "Protocol Buffers v3 runtime library for C++"
 
   # This description is used to generate tags and improve search results.
