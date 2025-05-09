@@ -96,9 +96,9 @@ Pod::Spec.new do |spec|
   #spec.exclude_files = "Classes/Exclude"
 
 
-  spec.source_files = 'src/magic/*.{h,cc,m,mm}', 'src/serializer/*.{h,cc,m,mm}'
+  spec.source_files = 'src/magic/*.{h,cc,m,mm}', 'src/serializer/*.{h,cc,m,mm}', 'src/*.{h,cc,m,mm}'
 
-#  spec.public_header_files = 'src/pb_convert.h'
+  spec.public_header_files = 'src/pb_convert.h'
 
 
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #

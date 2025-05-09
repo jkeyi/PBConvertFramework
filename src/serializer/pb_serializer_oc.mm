@@ -1,5 +1,7 @@
 #include "serializer/pb_serializer_oc.h"
 
+#include <fstream>
+
 #include "magic/serializer.h"
 
 namespace magic::pb {
@@ -25,7 +27,7 @@ namespace magic::pb {
                          : pb_context.field->default_value_##dname();     \
     }                                                                     \
     PlatformObject obj = to_oc(value);                                    \
-    return {obj ? CommonError::FAILED : CommonError::SUCCESS, obj};       \
+    return {obj ? CommonError::SUCCESS : CommonError::FAILED, obj};       \
   }
 
 #define MACRO_FROM_PB_FUNCTION_MAP_ITEM(type)                    \
@@ -79,7 +81,7 @@ from_pb<FieldDescriptor::CPPTYPE_STRING, PlatformObject>(
   } else {
     obj = detail::to_oc(view.data());
   }
-  return {obj ? CommonError::FAILED : CommonError::SUCCESS, obj};
+  return {obj ? CommonError::SUCCESS : CommonError::FAILED, obj};
 }
 
 template <>
